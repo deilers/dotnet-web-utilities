@@ -4,7 +4,7 @@ using Newtonsoft.Json;
 
 namespace DotnetWebUtils
 {
-    public abstract class OAuthHelper
+    public class OAuthHelper
     {
         protected readonly OAuthConfig _config;
         protected static HttpClient _client = new HttpClient();
@@ -35,7 +35,15 @@ namespace DotnetWebUtils
             return (_token.expiration < DateTime.Now);
         }
 
-        protected abstract Dictionary<string, string> GetOAuthCredentials();
+        protected Dictionary<string, string> GetOAuthCredentials()
+        {
+            return new Dictionary<string, string>
+            {
+                { Constants.GRANT_TYPE_KEY, Constants.CLIENT_CREDENTIALS },
+                { Constants.CLIENT_ID_KEY, _config.ClientId },
+                { Constants.CLIENT_SECRET_KEY, _config.ClientSecret }
+            };
+        }
 
         protected HttpContent GetTokenRequestContent()
         {
