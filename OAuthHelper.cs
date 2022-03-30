@@ -1,0 +1,76 @@
+using System.Net.Http.Headers;
+using DotnetWebUtils.Model;
+using Newtonsoft.Json;
+
+namespace DotnetWebUtils
+{
+    public abstract class OAuthHelper
+    {
+        protected readonly OAuthConfig _config;
+        protected static HttpClient _client = new HttpClient();
+        private static Dictionary<string, OAuthToken> _tokenDictionary = new Dictionary<string, OAuthToken>();
+
+        private OAuthToken _token
+        {
+            get
+            {
+                return _tokenDictionary.ContainsKey(this.GetType().Name)
+                ? _tokenDictionary[this.GetType().Name]
+                : null;
+            }
+
+            set
+            {
+                _tokenDictionary[this.GetType().Name] = value;
+            }
+        }
+
+        public OAuthHelper(OAuthConfig config)
+        {
+            _config = config;
+        }
+
+        protected bool TokenExpired()
+        {
+            return (_token.expiration < DateTime.Now);
+        }
+
+        protected abstract Dictionary<string, string> GetOAuthCredentials();
+
+        protected HttpContent GetTokenRequestContent()
+        {
+            HttpContent content = new FormUrlEncodedContent(GetOAuthCredentials());
+            content.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
+            content.Headers.ContentType.CharSet = "UTF-8";
+            return content;
+        }
+
+        public async Task<OAuthToken> GetToken()
+        {
+            if (_token == null || TokenExpired())
+            {
+                using (var res = await _client.PostAsync(_config.TokenEndpoint, GetTokenRequestContent()))
+                {
+                    var contents = await res.Content.ReadAsStringAsync();
+                    var dto = JsonConvert.DeserializeObject<OAuthTokenDto>(contents);
+                    var token = CreateTokenObjectAndSetTimeout(dto);
+                    _token = token;
+                    return token;
+                }
+            }
+            else
+            {
+                return _token;
+            }
+        }
+
+        protected OAuthToken CreateTokenObjectAndSetTimeout(OAuthTokenDto tokenDto)
+        {
+            return new OAuthToken()
+            {
+                token = tokenDto.access_token,
+                expiration = DateTime.Now.AddMinutes(59)
+            };
+        }
+    }
+}
