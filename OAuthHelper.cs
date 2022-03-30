@@ -4,6 +4,9 @@ using Newtonsoft.Json;
 
 namespace DotnetWebUtils
 {
+    /// <summary>
+    /// Utility class for managing OAuth bearer tokens within an instance of RestHelper
+    /// </summary>
     public class OAuthHelper
     {
         protected readonly OAuthConfig _config;
