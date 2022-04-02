@@ -3,7 +3,7 @@ namespace DotnetWebUtils.Model
 {
     public class OAuthToken
     {
-        public String? token { get; set; }
+        public string token { get; set; }
         public DateTime expiration { get; set; }
     }
 
