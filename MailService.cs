@@ -1,4 +1,5 @@
 using DotnetWebUtils.Model;
+using System.Net.Mail;
 using System.Text;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
@@ -16,7 +17,37 @@ namespace DotnetWebUtils
             _settings = settings;
         }
 
-        protected abstract string CreateEmailBody(string body);
+        /// <summary>
+        /// Abstract method for implementer to define the HTML body of their email
+        /// </summary>
+        /// <param name="body"></param>
+        /// <returns></returns>
+        protected abstract string CreateEmailBody(string body = "");
+
+        /// <summary>
+        /// Send message to user in a LDAP based directory
+        /// </summary>
+        /// <param name="recipient">recipient identifier</param>
+        /// <param name="message">email payload to be sent via SMTP</param>
+        public abstract void SendEmail(UserQuery recipient, MailMessage message);
+
+        protected virtual MailMessage GetEncryptedMailMessage(User recipient, MessageContents messageContents)
+        {
+            var message = new MailMessage()
+            {
+                From = new MailAddress(_settings.FromEmailAddress),
+                Subject = messageContents.Subject
+            };
+
+            message.To.Add(new MailAddress(recipient.Email));
+
+            string body = CreateEmailBody(messageContents.BodyText);
+            var envelope = CreateMailEnvelope(body);
+            var cert = GetEmailCertificate(recipient.CertificateList);
+
+            EncryptEnvelope(envelope, cert, message);
+            return message;
+        }
 
         /// <summary>
         /// Returns certificate needed to encrypt email message
@@ -36,7 +67,10 @@ namespace DotnetWebUtils
             throw new ArgumentException();
         }
 
-        protected StringBuilder SetEncryptionHeaders(StringBuilder message)
+        /// <summary>
+        /// Default encryption headers to be set in CreateEmailBody. Override if modifications are needed.
+        /// </summary>
+        protected virtual StringBuilder SetEncryptionHeaders(StringBuilder message)
         {
             message.AppendLine("content-type: multipart/mixed; boundary=unique-boundary-1");
             message.AppendLine();
@@ -47,10 +81,41 @@ namespace DotnetWebUtils
             return message;
         }
 
-        protected StringBuilder SetEncryptionFooter(StringBuilder message)
+        /// <summary>
+        /// Default encryption footer to be set in CreateEmailBody. Override if modifications are needed.
+        /// </summary>
+        protected virtual StringBuilder SetEncryptionFooter(StringBuilder message)
         {
             message.AppendLine("--unique-boundary-1");
             return message;
+        }
+
+        /// <summary>
+        /// Create email payload to be encrypted
+        /// </summary>
+        /// <param name="body">body text/html of email to be sent</param>
+        /// <returns>EnvelopedCms object with message and encryption algorithm metadata</returns>
+        protected EnvelopedCms CreateMailEnvelope(string body)
+        {
+            return new EnvelopedCms(new ContentInfo(Encoding.ASCII.GetBytes(body)),
+                                    new AlgorithmIdentifier(new Oid(_settings.EmailEncryptionAlgorithmOid)));
+        }
+
+        /// <summary>
+        /// Send MailMessage using your organization's mail server and port
+        /// </summary>
+        protected virtual void SendEmail(MailMessage message)
+        {
+            using (var mailClient = new SmtpClient(_settings.MailServer, _settings.MailPort))
+            {
+                mailClient.Send(message);
+            }
+        }
+
+        protected virtual void EncryptEnvelope(EnvelopedCms envelope, X509Certificate2 cert, MailMessage message)
+        {
+            envelope.Encrypt(new CmsRecipient(SubjectIdentifierType.IssuerAndSerialNumber, cert));
+            message.AlternateViews.Add(new AlternateView(new MemoryStream(envelope.Encode()), _smimeMediaType));
         }
 
         private bool IsCorrectKey(X509Certificate2 cert)
