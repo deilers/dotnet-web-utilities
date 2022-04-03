@@ -48,8 +48,9 @@ namespace DotnetWebUtils
                 Subject = messageContents.Subject
             };
 
+            var cert = GetEmailCertificate(recipient.CertificateList);
             message.To.Add(new MailAddress(recipient.Email));
-            return EncryptMailMessage(messageContents.BodyText, recipient.CertificateList, message);
+            return EncryptMailMessageWithContent(message, cert, messageContents.BodyText);
         }
 
         /// <summary>
@@ -115,11 +116,13 @@ namespace DotnetWebUtils
             }
         }
 
-        protected virtual MailMessage EncryptMailMessage(string bodyText, X509Certificate2Collection collection, MailMessage message)
+        /// <summary>
+        /// Add content to MailMessage object and encrypt
+        /// </summary>
+        protected virtual MailMessage EncryptMailMessageWithContent(MailMessage message, X509Certificate2 cert, string bodyText = "")
         {
             string body = CreateEmailBody(bodyText);
             var envelope = CreateMailEnvelope(body);
-            var cert = GetEmailCertificate(collection);
             envelope.Encrypt(new CmsRecipient(SubjectIdentifierType.IssuerAndSerialNumber, cert));
             message.AlternateViews.Add(new AlternateView(new MemoryStream(envelope.Encode()), _smimeMediaType));
             return message;
