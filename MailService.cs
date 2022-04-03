@@ -122,7 +122,7 @@ namespace DotnetWebUtils
             message.AlternateViews.Add(new AlternateView(new MemoryStream(envelope.Encode()), _smimeMediaType));
         }
 
-        private bool IsCorrectKey(X509Certificate2 cert)
+        protected virtual bool IsCorrectKey(X509Certificate2 cert)
         {
             return cert.Extensions.OfType<X509KeyUsageExtension>().Any(cx => cx.KeyUsages.HasFlag(X509KeyUsageFlags.KeyEncipherment))
             || cert.Extensions.OfType<X509EnhancedKeyUsageExtension>().Any(cx => cx.EnhancedKeyUsages.OfType<Oid>().Any(k => k.Value == _settings.SecureEmailCertificateOid));
