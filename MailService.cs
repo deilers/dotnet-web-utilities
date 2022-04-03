@@ -7,6 +7,10 @@ using System.Security.Cryptography.Pkcs;
 
 namespace DotnetWebUtils
 {
+    /// <summary>
+    /// Abstract implementation of an SMTP encrypted email service, for use inside an organization with an LDAP-based directory.
+    /// Assumes emails will be encrypted with a recipient's S/MIME certificate, but implementers can also use this to send unencrypted as well.
+    /// </summary>
     public abstract class MailService
     {
         protected readonly MailServerSettings _settings;
@@ -18,18 +22,18 @@ namespace DotnetWebUtils
         }
 
         /// <summary>
+        /// Send message to a directory user
+        /// </summary>
+        /// <param name="recipient">recipient identifier</param>
+        /// <param name="message">email payload to be sent via SMTP</param>
+        public abstract void SendEmail(UserQuery recipient, MailMessage message);
+
+        /// <summary>
         /// Abstract method for implementer to define the HTML body of their email
         /// </summary>
         /// <param name="body"></param>
         /// <returns></returns>
         protected abstract string CreateEmailBody(string body = "");
-
-        /// <summary>
-        /// Send message to user in a LDAP based directory
-        /// </summary>
-        /// <param name="recipient">recipient identifier</param>
-        /// <param name="message">email payload to be sent via SMTP</param>
-        public abstract void SendEmail(UserQuery recipient, MailMessage message);
 
         protected virtual MailMessage GetEncryptedMailMessage(User recipient, MessageContents messageContents)
         {
