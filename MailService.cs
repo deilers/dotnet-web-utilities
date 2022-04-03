@@ -22,11 +22,16 @@ namespace DotnetWebUtils
         }
 
         /// <summary>
-        /// Send message to a directory user
+        /// Send email to a directory user
         /// </summary>
-        /// <param name="recipient">recipient identifier</param>
-        /// <param name="message">email payload to be sent via SMTP</param>
-        public abstract void SendEmail(UserQuery recipient, MailMessage message);
+        /// <param name="recipient">recipient directory identifier</param>
+        public abstract void SendEmail(UserQuery recipient);
+
+        /// <summary>
+        /// Send email with custom message content not configured in this instance.
+        /// </summary>
+        /// <param name="recipient">recipient directory identifier</param>
+        public abstract void SendEmailWithAlternateMessage(UserQuery recipient, MailMessage message);
 
         /// <summary>
         /// Abstract method for implementer to define the HTML body of their email
@@ -44,13 +49,7 @@ namespace DotnetWebUtils
             };
 
             message.To.Add(new MailAddress(recipient.Email));
-
-            string body = CreateEmailBody(messageContents.BodyText);
-            var envelope = CreateMailEnvelope(body);
-            var cert = GetEmailCertificate(recipient.CertificateList);
-
-            EncryptEnvelope(envelope, cert, message);
-            return message;
+            return EncryptMailMessage(messageContents.BodyText, recipient.CertificateList, message);
         }
 
         /// <summary>
@@ -116,10 +115,14 @@ namespace DotnetWebUtils
             }
         }
 
-        protected virtual void EncryptEnvelope(EnvelopedCms envelope, X509Certificate2 cert, MailMessage message)
+        protected virtual MailMessage EncryptMailMessage(string bodyText, X509Certificate2Collection collection, MailMessage message)
         {
+            string body = CreateEmailBody(bodyText);
+            var envelope = CreateMailEnvelope(body);
+            var cert = GetEmailCertificate(collection);
             envelope.Encrypt(new CmsRecipient(SubjectIdentifierType.IssuerAndSerialNumber, cert));
             message.AlternateViews.Add(new AlternateView(new MemoryStream(envelope.Encode()), _smimeMediaType));
+            return message;
         }
 
         protected virtual bool IsCorrectKey(X509Certificate2 cert)
