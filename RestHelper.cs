@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 namespace DotnetWebUtils
 {
     /// <summary>
-    /// Utility class for interfacing with RESTful APIs
+    /// Base class for interfacing with RESTful APIs with authentication
     /// </summary>
     public class RestHelper : IRestHelper
     {

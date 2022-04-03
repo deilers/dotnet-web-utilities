@@ -36,8 +36,6 @@ namespace DotnetWebUtils
         /// <summary>
         /// Abstract method for implementer to define the HTML body of their email
         /// </summary>
-        /// <param name="body"></param>
-        /// <returns></returns>
         protected abstract string CreateEmailBody(string body = "");
 
         protected virtual MailMessage GetEncryptedMailMessage(User recipient, MessageContents messageContents)
@@ -51,6 +49,18 @@ namespace DotnetWebUtils
             var cert = GetEmailCertificate(recipient.CertificateList);
             message.To.Add(new MailAddress(recipient.Email));
             return EncryptMailMessageWithContent(message, cert, messageContents.BodyText);
+        }
+
+        /// <summary>
+        /// Add content to MailMessage object and encrypt
+        /// </summary>
+        protected virtual MailMessage EncryptMailMessageWithContent(MailMessage message, X509Certificate2 cert, string bodyText = "")
+        {
+            string body = CreateEmailBody(bodyText);
+            var envelope = CreateMailEnvelope(body);
+            envelope.Encrypt(new CmsRecipient(SubjectIdentifierType.IssuerAndSerialNumber, cert));
+            message.AlternateViews.Add(new AlternateView(new MemoryStream(envelope.Encode()), _smimeMediaType));
+            return message;
         }
 
         /// <summary>
@@ -69,6 +79,12 @@ namespace DotnetWebUtils
             }
 
             throw new ArgumentException();
+        }
+
+        protected virtual bool IsCorrectKey(X509Certificate2 cert)
+        {
+            return cert.Extensions.OfType<X509KeyUsageExtension>().Any(cx => cx.KeyUsages.HasFlag(X509KeyUsageFlags.KeyEncipherment))
+            || cert.Extensions.OfType<X509EnhancedKeyUsageExtension>().Any(cx => cx.EnhancedKeyUsages.OfType<Oid>().Any(k => k.Value == _settings.SecureEmailCertificateOid));
         }
 
         /// <summary>
@@ -114,24 +130,6 @@ namespace DotnetWebUtils
             {
                 mailClient.Send(message);
             }
-        }
-
-        /// <summary>
-        /// Add content to MailMessage object and encrypt
-        /// </summary>
-        protected virtual MailMessage EncryptMailMessageWithContent(MailMessage message, X509Certificate2 cert, string bodyText = "")
-        {
-            string body = CreateEmailBody(bodyText);
-            var envelope = CreateMailEnvelope(body);
-            envelope.Encrypt(new CmsRecipient(SubjectIdentifierType.IssuerAndSerialNumber, cert));
-            message.AlternateViews.Add(new AlternateView(new MemoryStream(envelope.Encode()), _smimeMediaType));
-            return message;
-        }
-
-        protected virtual bool IsCorrectKey(X509Certificate2 cert)
-        {
-            return cert.Extensions.OfType<X509KeyUsageExtension>().Any(cx => cx.KeyUsages.HasFlag(X509KeyUsageFlags.KeyEncipherment))
-            || cert.Extensions.OfType<X509EnhancedKeyUsageExtension>().Any(cx => cx.EnhancedKeyUsages.OfType<Oid>().Any(k => k.Value == _settings.SecureEmailCertificateOid));
         }
     }
 }

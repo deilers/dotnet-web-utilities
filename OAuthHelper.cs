@@ -5,12 +5,20 @@ using Newtonsoft.Json;
 namespace DotnetWebUtils
 {
     /// <summary>
-    /// Utility class for managing OAuth bearer tokens within an instance of RestHelper
+    /// Base class for managing OAuth bearer tokens within an instance of RestHelper
     /// </summary>
     public class OAuthHelper
     {
         protected readonly OAuthConfig _config;
+
+        /// <summary>
+        /// Singleton instance of HttpClient exclusively for requesting authentication tokens
+        /// </summary>
         protected static HttpClient _client = new HttpClient();
+
+        /// <summary>
+        /// Token storage singleton, so it persists across multiple instances
+        /// </summary>
         private static Dictionary<string, OAuthToken> _tokenDictionary = new Dictionary<string, OAuthToken>();
 
         private OAuthToken _token
