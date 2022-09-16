@@ -24,35 +24,25 @@ namespace DotnetWebUtils
 
         public virtual async Task<T> GetApiPayloadAsync<T>(HttpRequestMessage request)
         {
-            using (var response = await _client.SendAsync(request))
-            {
-                var responseData = JsonConvert.DeserializeObject<T>(response.Content.ReadAsStringAsync().Result);
-                return responseData;
-            }
+            using HttpResponseMessage response = await _client.SendAsync(request);
+            var responsePayload = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+            return responsePayload;
         }
 
         public virtual async Task<T> PostDataAndGetPayloadAsync<T>(HttpRequestMessage request, object dataToPost)
         {
-            T payload;
-
             if (dataToPost != null)
             {
                 request.Content = FormatPostBody(dataToPost);
             }
 
-            using (var response = await _client.SendAsync(request))
-            {
-                payload = JsonConvert.DeserializeObject<T>(response.Content.ReadAsStringAsync().Result);
-                return payload;
-            }
+            return await GetApiPayloadAsync<T>(request);
         }
 
         public virtual async Task<bool> GetApiBooleanResultAsync(HttpRequestMessage request)
         {
-            using (var response = await _client.SendAsync(request))
-            {
-                return IsSuccessResult(response);
-            }
+            using HttpResponseMessage response = await _client.SendAsync(request);
+            return IsSuccessResult(response);
         }
 
         public virtual async Task<bool> PostDataAndGetBooleanAsync(HttpRequestMessage request, object dataToPost = null)
@@ -64,10 +54,8 @@ namespace DotnetWebUtils
                 request.Content = content;
             }
 
-            using (var response = await _client.SendAsync(request))
-            {
-                return IsSuccessResult(response);
-            }
+            using HttpResponseMessage response = await _client.SendAsync(request);
+            return IsSuccessResult(response);
         }
 
         public virtual async Task<HttpRequestMessage> SetupHttpRequestMessageAsync(string endpoint, HttpMethod method)
