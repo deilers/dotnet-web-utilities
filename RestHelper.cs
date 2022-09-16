@@ -70,12 +70,12 @@ namespace DotnetWebUtils
             }
         }
 
-        public virtual HttpRequestMessage SetupHttpRequestMessage(string endpoint, HttpMethod method)
+        public virtual async Task<HttpRequestMessage> SetupHttpRequestMessageAsync(string endpoint, HttpMethod method)
         {
-            var tokenString = _oAuthHelper.GetToken().Result.token;
+            var token = (await _oAuthHelper.GetToken()).token;
 
-            HttpRequestMessage request = new HttpRequestMessage(method, endpoint);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokenString);
+            HttpRequestMessage request = new(method, endpoint);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             return request;
         }
@@ -102,6 +102,6 @@ namespace DotnetWebUtils
         Task<bool> GetApiBooleanResultAsync(HttpRequestMessage request);
         Task<bool> PostDataAndGetBooleanAsync(HttpRequestMessage request, object dataToPost);
         Task<T> PostDataAndGetPayloadAsync<T>(HttpRequestMessage request, object dataToPost);
-        HttpRequestMessage SetupHttpRequestMessage(string endpoint, HttpMethod method);
+        Task<HttpRequestMessage> SetupHttpRequestMessageAsync(string endpoint, HttpMethod method);
     }
 }
