@@ -14,26 +14,23 @@ namespace DotnetWebUtils
         /// <summary>
         /// Singleton instance of HttpClient exclusively for requesting authentication tokens
         /// </summary>
-        protected static HttpClient _client = new HttpClient();
+        protected static HttpClient _client = new();
 
         /// <summary>
         /// Token storage singleton, so it persists across multiple instances
         /// </summary>
-        private static Dictionary<string, OAuthToken> _tokenDictionary = new Dictionary<string, OAuthToken>();
+        private static Dictionary<string, OAuthToken> _tokenDictionary = new();
 
         private OAuthToken _token
         {
             get
             {
-                return _tokenDictionary.ContainsKey(this.GetType().Name)
-                ? _tokenDictionary[this.GetType().Name]
+                return _tokenDictionary.ContainsKey(GetType().Name)
+                ? _tokenDictionary[GetType().Name]
                 : null;
             }
 
-            set
-            {
-                _tokenDictionary[this.GetType().Name] = value;
-            }
+            set => _tokenDictionary[GetType().Name] = value;
         }
 
         public OAuthHelper(OAuthConfig config)
@@ -43,7 +40,7 @@ namespace DotnetWebUtils
 
         protected bool TokenExpired()
         {
-            return (_token.expiration < DateTime.Now);
+            return _token.expiration < DateTime.Now;
         }
 
         protected Dictionary<string, string> GetOAuthCredentials()
@@ -68,14 +65,12 @@ namespace DotnetWebUtils
         {
             if (_token == null || TokenExpired())
             {
-                using (var res = await _client.PostAsync(_config.TokenEndpoint, GetTokenRequestContent()))
-                {
-                    var contents = await res.Content.ReadAsStringAsync();
-                    var dto = JsonConvert.DeserializeObject<OAuthTokenDto>(contents);
-                    var token = CreateTokenObjectAndSetTimeout(dto);
-                    _token = token;
-                    return token;
-                }
+                using HttpResponseMessage res = await _client.PostAsync(_config.TokenEndpoint, GetTokenRequestContent());
+                string contents = await res.Content.ReadAsStringAsync();
+                OAuthTokenDto dto = JsonConvert.DeserializeObject<OAuthTokenDto>(contents);
+                OAuthToken token = CreateTokenObjectAndSetTimeout(dto);
+                _token = token;
+                return token;
             }
             else
             {
@@ -83,7 +78,7 @@ namespace DotnetWebUtils
             }
         }
 
-        protected OAuthToken CreateTokenObjectAndSetTimeout(OAuthTokenDto tokenDto)
+        protected static OAuthToken CreateTokenObjectAndSetTimeout(OAuthTokenDto tokenDto)
         {
             return new OAuthToken()
             {
