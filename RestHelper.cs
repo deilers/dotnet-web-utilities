@@ -22,7 +22,7 @@ namespace DotnetWebUtils
             _oAuthHelper = new OAuthHelper(_config);
         }
 
-        public virtual async Task<T> GetApiPayload<T>(HttpRequestMessage request)
+        public virtual async Task<T> GetApiPayloadAsync<T>(HttpRequestMessage request)
         {
             using (var response = await _client.SendAsync(request))
             {
@@ -31,7 +31,7 @@ namespace DotnetWebUtils
             }
         }
 
-        public virtual async Task<T> PostDataAndGetPayload<T>(HttpRequestMessage request, object dataToPost)
+        public virtual async Task<T> PostDataAndGetPayloadAsync<T>(HttpRequestMessage request, object dataToPost)
         {
             T payload;
 
@@ -47,7 +47,7 @@ namespace DotnetWebUtils
             }
         }
 
-        public virtual async Task<bool> GetApiBooleanResult(HttpRequestMessage request)
+        public virtual async Task<bool> GetApiBooleanResultAsync(HttpRequestMessage request)
         {
             using (var response = await _client.SendAsync(request))
             {
@@ -55,7 +55,7 @@ namespace DotnetWebUtils
             }
         }
 
-        public virtual async Task<bool> PostDataAndGetBoolean(HttpRequestMessage request, object dataToPost = null)
+        public virtual async Task<bool> PostDataAndGetBooleanAsync(HttpRequestMessage request, object dataToPost = null)
         {
             if (dataToPost != null)
             {
@@ -98,10 +98,10 @@ namespace DotnetWebUtils
 
     public interface IRestHelper
     {
-        Task<T> GetApiPayload<T>(HttpRequestMessage request);
-        Task<bool> GetApiBooleanResult(HttpRequestMessage request);
-        Task<bool> PostDataAndGetBoolean(HttpRequestMessage request, object dataToPost);
-        Task<T> PostDataAndGetPayload<T>(HttpRequestMessage request, object dataToPost);
+        Task<T> GetApiPayloadAsync<T>(HttpRequestMessage request);
+        Task<bool> GetApiBooleanResultAsync(HttpRequestMessage request);
+        Task<bool> PostDataAndGetBooleanAsync(HttpRequestMessage request, object dataToPost);
+        Task<T> PostDataAndGetPayloadAsync<T>(HttpRequestMessage request, object dataToPost);
         HttpRequestMessage SetupHttpRequestMessage(string endpoint, HttpMethod method);
     }
 }
